@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Notifications</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #container {
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            padding: 20px;
+        }
+
+        #messages {
+            list-style: none;
+            padding: 0;
+        }
+
+        .message {
+            background-color: #e7f3fe;
+            border-left: 5px solid #2196F3;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            position: relative;
+        }
+
+            .message p {
+                margin: 0;
+            }
+
+            .message .date {
+                font-size: 0.8em;
+                color: #555;
+            }
+
+            .message a {
+                color: #2196F3;
+                text-decoration: none;
+            }
+
+                .message a:hover {
+                    text-decoration: underline;
+                }
+
+        .delete-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: red;
+            font-size: 1.2em;
+            cursor: pointer;
+        }
+
+        #new-message {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h2>Notifications</h2>
+        <ul id="messages"></ul>
+        <input type="text" id="new-message" placeholder="Type a new message and press Enter">
+    </div>
+    <script>
+        // Obtenha o parâmetro 'channel' da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const channel = urlParams.get('channel');
+
+        if (!channel) {
+            alert("Channel parameter is missing in the URL");
+            throw new Error("Channel parameter is missing in the URL");
+        }
+
+        // Conecte-se ao WebSocket usando o canal especificado
+        const socket = new WebSocket(`ws://localhost:5270/websocket/notifications/${channel}`);
+
+        socket.onmessage = function (event) {
+            const messages = document.getElementById("messages");
+            const data = JSON.parse(event.data);
+
+            console.log(data)
+            if (data.Action === "delete") {
+                const messageElement = document.querySelector(`li[data-message-id="${data.MessageId}"]`);
+                if (messageElement) {
+                    messages.removeChild(messageElement);
+                }
+                return;
+            }
+
+            const messageElement = document.createElement("li");
+            messageElement.className = "message";
+            messageElement.dataset.messageId = data.Id; // Usando o Id da mensagem
+
+            const messageContent = document.createElement("p");
+            messageContent.textContent = data.Message || "No message content";
+            messageElement.appendChild(messageContent);
+
+            const messageDate = document.createElement("p");
+            messageDate.className = "date";
+            messageDate.textContent = new Date(data.Date).toLocaleString() || "No date provided";
+            messageElement.appendChild(messageDate);
+
+            if (data.Url) {
+                const messageLink = document.createElement("a");
+                messageLink.href = data.Url;
+                messageLink.textContent = "More info";
+                messageLink.target = "_blank"; // Abre o link em uma nova aba
+                messageElement.appendChild(messageLink);
+            }
+
+            const deleteButton = document.createElement("button");
+            deleteButton.className = "delete-button";
+            deleteButton.textContent = "X";
+            deleteButton.onclick = async function () {
+                const messageId = messageElement.dataset.messageId;
+                await fetch(`https://localhost:7035/notification/delete/${channel}/${messageId}`, {
+                    method: 'DELETE'
+                });
+                messages.removeChild(messageElement);
+            };
+            messageElement.appendChild(deleteButton);
+
+            messages.appendChild(messageElement);
+        };
+
+        socket.onerror = function (error) {
+            console.error("WebSocket error:", error);
+        };
+
+        socket.onclose = function () {
+            console.log("WebSocket connection closed");
+        };
+
+        // Adicione um evento para o input de nova mensagem
+        const newMessageInput = document.getElementById("new-message");
+        newMessageInput.addEventListener("keypress", async function (event) {
+            if (event.key === "Enter") {
+                const message = newMessageInput.value;
+                if (message.trim() !== "") {
+                    await fetch(`https://localhost:7035/notification/publish/${channel}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ message: message })
+                    });
+                    newMessageInput.value = ""; // Limpe o input após enviar a mensagem
+                }
+            }
+        });
+    </script>
+</body>
+</html>
