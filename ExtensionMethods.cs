@@ -1,4 +1,4 @@
-﻿namespace RealTimeDriverTracking;
+﻿namespace NotificationRealTimeSocket;
 
 public static class ExtensionMethods
 {

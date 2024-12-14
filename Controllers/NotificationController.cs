@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using RealTimeDriverTracking.Repositories;
+using NotificationRealTimeSocket.Repositories;
 using StackExchange.Redis;
 using System.Text.Json;
 
-namespace RealTimeDriverTracking.Controllers;
+namespace NotificationRealTimeSocket.Controllers;
 
 [ApiController]
 [Route("[controller]")]

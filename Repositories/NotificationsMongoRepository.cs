@@ -1,6 +1,6 @@
-﻿using RealTimeDriverTracking.Domain;
+﻿using NotificationRealTimeSocket.Domain;
 
-namespace RealTimeDriverTracking.Repositories;
+namespace NotificationRealTimeSocket.Repositories;
 
 public class NotificationsMongoRepository : INotificationsMongoRepository
 {

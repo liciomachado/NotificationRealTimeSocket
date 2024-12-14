@@ -1,4 +1,4 @@
-﻿namespace RealTimeDriverTracking.Domain;
+﻿namespace NotificationRealTimeSocket.Domain;
 
 public class User(string id)
 {

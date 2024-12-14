@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace RealTimeDriverTracking.Controllers;
+namespace NotificationRealTimeSocket.Controllers;
 
 [ApiController]
 [Route("[controller]")]

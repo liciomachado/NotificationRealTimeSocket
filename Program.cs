@@ -1,5 +1,5 @@
-using RealTimeDriverTracking;
-using RealTimeDriverTracking.Repositories;
+using NotificationRealTimeSocket;
+using NotificationRealTimeSocket.Repositories;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);

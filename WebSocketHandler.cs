@@ -1,11 +1,11 @@
-﻿using RealTimeDriverTracking.Domain;
-using RealTimeDriverTracking.Repositories;
+﻿using NotificationRealTimeSocket.Domain;
+using NotificationRealTimeSocket.Repositories;
 using StackExchange.Redis;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 
-namespace RealTimeDriverTracking;
+namespace NotificationRealTimeSocket;
 
 public class WebSocketHandler(IConnectionMultiplexer redis, INotificationsMongoRepository notificationsRepository)
 {
