@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server-Sent Events Notifications</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #container {
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            padding: 20px;
+        }
+
+        #messages {
+            list-style: none;
+            padding: 0;
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            position: relative;
+        }
+
+            .message.processing {
+                background-color: #e7f3fe;
+                border-left: 5px solid #2196F3;
+            }
+
+            .message.finalized {
+                background-color: #d4edda;
+                border-left: 5px solid #28a745;
+            }
+
+            .message p {
+                margin: 0;
+            }
+
+            .message .date {
+                font-size: 0.8em;
+                color: #555;
+            }
+
+            .message a {
+                color: #2196F3;
+                text-decoration: none;
+            }
+
+                .message a:hover {
+                    text-decoration: underline;
+                }
+
+        .delete-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: red;
+            font-size: 1.2em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        .loading-spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            width: 12px;
+            height: 12px;
+            animation: spin 1s linear infinite;
+            margin-right: 5px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #new-message {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h2>Suas Notificações</h2>
+        <ul id="messages"></ul>
+        <input type="text" id="new-message" placeholder="Type a new message and press Enter">
+    </div>
+    <script>
+        // Obtenha o parâmetro 'channel' da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const channel = urlParams.get('channel');
+
+        if (!channel) {
+            alert("Channel parameter is missing in the URL");
+            throw new Error("Channel parameter is missing in the URL");
+        }
+
+        // Conecte-se ao SSE usando o canal especificado
+        const eventSource = new EventSource(`https://localhost:7035/ServerSentEvent/stream/${channel}`);
+
+        eventSource.onmessage = function (event) {
+            const messages = document.getElementById("messages");
+            const data = JSON.parse(event.data);
+
+            console.log(data);
+            if (data.Action === "delete") {
+                const messageElement = document.querySelector(`li[data-message-id="${data.MessageId}"]`);
+                if (messageElement) {
+                    messages.removeChild(messageElement);
+                }
+                return;
+            }
+
+            let messageElement = document.querySelector(`li[data-message-id="${data.Id}"]`);
+
+            if (data.Action === "update" && messageElement) {
+                // Atualize a notificação existente
+                messageElement.className = "message finalized";
+                messageElement.querySelector("p").textContent = data.Message || "No message content";
+                messageElement.querySelector(".date").textContent = new Date(data.Date).toLocaleString() || "No date provided";
+                if (data.Url) {
+                    let messageLink = messageElement.querySelector("a");
+                    if (!messageLink) {
+                        messageLink = document.createElement("a");
+                        messageElement.appendChild(messageLink);
+                    }
+                    messageLink.href = data.Url;
+                    messageLink.textContent = "Ver detalhes";
+                    messageLink.target = "_blank";
+                }
+                // Remova o loading spinner se presente
+                const loadingSpinner = messageElement.querySelector(".loading-spinner");
+                if (loadingSpinner) {
+                    loadingSpinner.remove();
+                }
+
+                // Adicione o botão de delete se o status for Finalized
+                const deleteButton = document.createElement("button");
+                deleteButton.className = "delete-button";
+
+                if (data.Status !== "Finalized") {
+                    const loadingSpinner = document.createElement("div");
+                    loadingSpinner.className = "loading-spinner";
+                    deleteButton.appendChild(loadingSpinner);
+                }
+                else {
+                    const deleteButtonText = document.createTextNode("X");
+                    deleteButton.appendChild(deleteButtonText);
+                    deleteButton.onclick = async function () {
+                        const messageId = messageElement.dataset.messageId;
+                        await fetch(`https://localhost:7035/notification/delete/${channel}/${messageId}`, {
+                            method: 'DELETE'
+                        });
+                        messages.removeChild(messageElement);
+                    };
+                }
+
+                messageElement.appendChild(deleteButton);
+
+                messages.appendChild(messageElement);
+
+            } else {
+                // Crie uma nova notificação
+                messageElement = document.createElement("li");
+                messageElement.className = "message";
+                messageElement.dataset.messageId = data.Id;
+
+                // Adicione a classe com base no status
+                if (data.Status === "Processing") {
+                    messageElement.classList.add("processing");
+                } else if (data.Status === "Finalized") {
+                    messageElement.classList.add("finalized");
+                }
+
+                const messageContent = document.createElement("p");
+                messageContent.textContent = data.Message || "No message content";
+                messageElement.appendChild(messageContent);
+
+                const messageDate = document.createElement("p");
+                messageDate.className = "date";
+                messageDate.textContent = new Date(data.Date).toLocaleString() || "No date provided";
+                messageElement.appendChild(messageDate);
+
+                if (data.Url) {
+                    const messageLink = document.createElement("a");
+                    messageLink.href = data.Url;
+                    messageLink.textContent = "Ver detalhes";
+                    messageLink.target = "_blank";
+                    messageElement.appendChild(messageLink);
+                }
+
+                const deleteButton = document.createElement("button");
+                deleteButton.className = "delete-button";
+
+                if (data.Status !== "Finalized") {
+                    const loadingSpinner = document.createElement("div");
+                    loadingSpinner.className = "loading-spinner";
+                    deleteButton.appendChild(loadingSpinner);
+                }
+                else {
+                    const deleteButtonText = document.createTextNode("X");
+                    deleteButton.appendChild(deleteButtonText);
+                    deleteButton.onclick = async function () {
+                        const messageId = messageElement.dataset.messageId;
+                        await fetch(`https://localhost:7035/notification/delete/${channel}/${messageId}`, {
+                            method: 'DELETE'
+                        });
+                        messages.removeChild(messageElement);
+                    };
+                }
+
+                messageElement.appendChild(deleteButton);
+
+                messages.appendChild(messageElement);
+            }
+        };
+
+        eventSource.onerror = function (error) {
+            console.error("SSE error:", error);
+        };
+
+        // Adicione um evento para o input de nova mensagem
+        const newMessageInput = document.getElementById("new-message");
+        newMessageInput.addEventListener("keypress", async function (event) {
+            if (event.key === "Enter") {
+                const message = newMessageInput.value;
+                if (message.trim() !== "") {
+                    await fetch(`https://localhost:7035/notification/publish/${channel}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ message: message })
+                    });
+                    newMessageInput.value = "";
+                }
+            }
+        });
+    </script>
+</body>
+</html>

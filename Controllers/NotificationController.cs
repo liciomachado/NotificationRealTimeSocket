@@ -29,6 +29,21 @@ public class NotificationController(IConnectionMultiplexer redis, INotifications
         await subscriber.PublishAsync(userId, deleteNotification);
         return NoContent();
     }
+
+    [HttpPut("finalize/{userId}/{messageId}")]
+    public async Task<IActionResult> Finalize(string userId, string messageId)
+    {
+        var notification = await notificationsMongoRepository.GetAsync(userId, messageId);
+        if (notification is null) return NotFound();
+
+        notification.Status = "Finalized";
+        await notificationsMongoRepository.Update(userId, notification);
+
+        var subscriber = redis.GetSubscriber();
+        var deleteNotification = JsonSerializer.Serialize(new ChangeNotificationDtoWebsocket("update", notification.Id, notification.Message, notification.DateCreated, notification.Url, notification.Status));
+        await subscriber.PublishAsync(userId, deleteNotification);
+        return NoContent();
+    }
 }
 
 public record NotificationDtoRequest(string Message, string? Url);

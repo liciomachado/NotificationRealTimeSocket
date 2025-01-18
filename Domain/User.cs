@@ -26,4 +26,5 @@ public class Notification(string message, string? url = null)
     public DateTime DateCreated { get; set; } = DateTime.Now;
     public bool Read { get; set; }
     public string? Url { get; set; } = url;
+    public string Status { get; set; } = "Processing";
 }

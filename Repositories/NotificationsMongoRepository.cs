@@ -37,4 +37,22 @@ public class NotificationsMongoRepository : INotificationsMongoRepository
         var user = Users.First(x => x.Id == userId);
         user.SetMessageAsRead(messageId);
     }
+
+    public async Task<Notification?> GetAsync(string userId, string messageId)
+    {
+        var user = Users.FirstOrDefault(x => x.Id == userId);
+        if (user is null) return null;
+
+        var notification = user.Notifications.FirstOrDefault(x => x.Id == messageId);
+        if (notification is null) return null;
+
+        return notification;
+    }
+
+    public async Task Update(string userId, Notification notification)
+    {
+        var user = Users.First(x => x.Id == userId);
+        var notificationFound = user.Notifications.FirstOrDefault(x => x.Id == notification.Id);
+        notificationFound = notification;
+    }
 }

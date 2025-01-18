@@ -80,12 +80,12 @@
 </head>
 <body>
     <div id="container">
-        <h2>Notifications</h2>
+        <h2>Suas NotificaÃ§Ãµes</h2>
         <ul id="messages"></ul>
         <input type="text" id="new-message" placeholder="Type a new message and press Enter">
     </div>
     <script>
-        // Obtenha o parâmetro 'channel' da URL
+        // Obtenha o parï¿½metro 'channel' da URL
         const urlParams = new URLSearchParams(window.location.search);
         const channel = urlParams.get('channel');
 
@@ -126,7 +126,7 @@
             if (data.Url) {
                 const messageLink = document.createElement("a");
                 messageLink.href = data.Url;
-                messageLink.textContent = "More info";
+                messageLink.textContent = "Ver detalhes";
                 messageLink.target = "_blank"; // Abre o link em uma nova aba
                 messageElement.appendChild(messageLink);
             }
@@ -167,7 +167,7 @@
                         },
                         body: JSON.stringify({ message: message })
                     });
-                    newMessageInput.value = ""; // Limpe o input após enviar a mensagem
+                    newMessageInput.value = ""; // Limpe o input apï¿½s enviar a mensagem
                 }
             }
         });

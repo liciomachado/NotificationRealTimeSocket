@@ -8,4 +8,6 @@ public interface INotificationsMongoRepository
 
     Task<List<Notification>> GetNotificationsByUser(string userId);
     Task DeleteMessage(string userId, string messageId);
+    Task<Notification?> GetAsync(string userId, string messageId);
+    Task Update(string userId, Notification notification);
 }

@@ -18,7 +18,7 @@ public class WebSocketHandler(IConnectionMultiplexer redis, INotificationsMongoR
         var notifications = await notificationsRepository.GetNotificationsByUser(userId);
         foreach (var notification in notifications)
         {
-            var messagedtoSocket = new NotificationDtoWebsocket(notification.Id, notification.Message, notification.DateCreated, notification.Url);
+            var messagedtoSocket = new NotificationDtoWebsocket(notification.Id, notification.Message, notification.DateCreated, notification.Url, notification.Status);
             var bufferNotifications = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(messagedtoSocket));
             await webSocket.SendAsync(new ArraySegment<byte>(bufferNotifications), WebSocketMessageType.Text, true, CancellationToken.None);
         }
@@ -34,7 +34,7 @@ public class WebSocketHandler(IConnectionMultiplexer redis, INotificationsMongoR
                 buffer = Encoding.UTF8.GetBytes(message.ToString());
             else
             {
-                var messageSend = new NotificationDtoWebsocket(notificationReceived.Id, notificationReceived.Message, notificationReceived.DateCreated, notificationReceived.Url);
+                var messageSend = new NotificationDtoWebsocket(notificationReceived.Id, notificationReceived.Message, notificationReceived.DateCreated, notificationReceived.Url, notificationReceived.Status);
                 buffer = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(messageSend));
             }
 
@@ -55,4 +55,6 @@ public class WebSocketHandler(IConnectionMultiplexer redis, INotificationsMongoR
     }
 }
 
-public record NotificationDtoWebsocket(string Id, string Message, DateTime Date, string? Url);
+public record ChangeNotificationDtoWebsocket(string Action, string Id, string Message, DateTime Date, string? Url, string Status);
+
+public record NotificationDtoWebsocket(string Id, string Message, DateTime Date, string? Url, string Status);
