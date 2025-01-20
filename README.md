@@ -1,4 +1,4 @@
-# Projeto MS Notifications - .NET 8 + Postgres com Docker 
+# Projeto MS Notifications - .NET 8 + Redis com Docker 
 
 Este é um projeto .NET que utiliza Docker para facilitar o ambiente de desenvolvimento e execução. Utiliza Docker Compose para orquestrar a aplicação juntamente com Redis Pub/sub para envio das notificações aos ouvintes.
 
@@ -16,12 +16,11 @@ Este é um projeto .NET que utiliza Docker para facilitar o ambiente de desenvol
    cd NotificationRealTimeSocket
   ```
 
-2. Execute o seguinte comando para iniciar o projeto junto com o Redis:
+2. Execute o seguinte comando para iniciar o Redis:
 
 ```bash
   docker-compose up -d
 ```
-Isso iniciará os contêineres Docker em segundo plano (-d para detached mode), incluindo a aplicação .NET e o banco de dados PostgreSQL.
 
 Acesse o back-end em: http://localhost:7035
 Acesse o front SSE em: sse.html
