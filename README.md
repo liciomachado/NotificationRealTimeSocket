@@ -1,15 +1,15 @@
 # Projeto MS Notifications - .NET 8 + Postgres com Docker 
 
-Este é um projeto .NET que utiliza Docker para facilitar o ambiente de desenvolvimento e execução. Utiliza Docker Compose para orquestrar a aplicação juntamente com um banco de dados PostgreSQL.
+Este Ã© um projeto .NET que utiliza Docker para facilitar o ambiente de desenvolvimento e execuÃ§Ã£o. Utiliza Docker Compose para orquestrar a aplicaÃ§Ã£o juntamente com Redis Pub/sub para envio das notificaÃ§Ãµes aos ouvintes.
 
-## Pré-requisitos
+## PrÃ©-requisitos
 
-- Docker Engine: [Instalação do Docker](https://docs.docker.com/get-docker/)
-- Docker Compose: [Instalação do Docker Compose](https://docs.docker.com/compose/install/)
+- Docker Engine: [InstalaÃ§Ã£o do Docker](https://docs.docker.com/get-docker/)
+- Docker Compose: [InstalaÃ§Ã£o do Docker Compose](https://docs.docker.com/compose/install/)
 
 ## Como executar
 
-1. Clone este repositório:
+1. Clone este repositÃ³rio:
 
  ```bash
    git clone https://github.com/liciomachado/NotificationRealTimeSocket.git
@@ -21,13 +21,13 @@ Este é um projeto .NET que utiliza Docker para facilitar o ambiente de desenvolv
 ```bash
   docker-compose up -d
 ```
-Isso iniciará os contêineres Docker em segundo plano (-d para detached mode), incluindo a aplicação .NET e o banco de dados PostgreSQL.
+Isso iniciarÃ¡ os contÃªineres Docker em segundo plano (-d para detached mode), incluindo a aplicaÃ§Ã£o .NET e o banco de dados PostgreSQL.
 
 Acesse o back-end em: http://localhost:7035
 Acesse o front SSE em: sse.html
 Acesse o front WebSocket em: websocket.html
 
-3. Parando a execução do projeto e removendo os containers
+3. Parando a execuÃ§Ã£o do projeto e removendo os containers
 
 ```bash
   docker-compose down
