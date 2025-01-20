@@ -128,119 +128,15 @@
         const eventSource = new EventSource(`https://localhost:7035/ServerSentEvent/stream/${channel}`);
 
         eventSource.onmessage = function (event) {
-            const messages = document.getElementById("messages");
             const data = JSON.parse(event.data);
-
             console.log(data);
+
             if (data.Action === "delete") {
-                const messageElement = document.querySelector(`li[data-message-id="${data.MessageId}"]`);
-                if (messageElement) {
-                    messages.removeChild(messageElement);
-                }
-                return;
-            }
-
-            let messageElement = document.querySelector(`li[data-message-id="${data.Id}"]`);
-
-            if (data.Action === "update" && messageElement) {
-                // Atualize a notificação existente
-                messageElement.className = "message finalized";
-                messageElement.querySelector("p").textContent = data.Message || "No message content";
-                messageElement.querySelector(".date").textContent = new Date(data.Date).toLocaleString() || "No date provided";
-                if (data.Url) {
-                    let messageLink = messageElement.querySelector("a");
-                    if (!messageLink) {
-                        messageLink = document.createElement("a");
-                        messageElement.appendChild(messageLink);
-                    }
-                    messageLink.href = data.Url;
-                    messageLink.textContent = "Ver detalhes";
-                    messageLink.target = "_blank";
-                }
-                // Remova o loading spinner se presente
-                const loadingSpinner = messageElement.querySelector(".loading-spinner");
-                if (loadingSpinner) {
-                    loadingSpinner.remove();
-                }
-
-                // Adicione o botão de delete se o status for Finalized
-                const deleteButton = document.createElement("button");
-                deleteButton.className = "delete-button";
-
-                if (data.Status !== "Finalized") {
-                    const loadingSpinner = document.createElement("div");
-                    loadingSpinner.className = "loading-spinner";
-                    deleteButton.appendChild(loadingSpinner);
-                }
-                else {
-                    const deleteButtonText = document.createTextNode("X");
-                    deleteButton.appendChild(deleteButtonText);
-                    deleteButton.onclick = async function () {
-                        const messageId = messageElement.dataset.messageId;
-                        await fetch(`https://localhost:7035/notification/delete/${channel}/${messageId}`, {
-                            method: 'DELETE'
-                        });
-                        messages.removeChild(messageElement);
-                    };
-                }
-
-                messageElement.appendChild(deleteButton);
-
-                messages.appendChild(messageElement);
-
+                deleteNotification(data.MessageId);
+            } else if (data.Action === "update") {
+                updateNotification(data);
             } else {
-                // Crie uma nova notificação
-                messageElement = document.createElement("li");
-                messageElement.className = "message";
-                messageElement.dataset.messageId = data.Id;
-
-                // Adicione a classe com base no status
-                if (data.Status === "Processing") {
-                    messageElement.classList.add("processing");
-                } else if (data.Status === "Finalized") {
-                    messageElement.classList.add("finalized");
-                }
-
-                const messageContent = document.createElement("p");
-                messageContent.textContent = data.Message || "No message content";
-                messageElement.appendChild(messageContent);
-
-                const messageDate = document.createElement("p");
-                messageDate.className = "date";
-                messageDate.textContent = new Date(data.Date).toLocaleString() || "No date provided";
-                messageElement.appendChild(messageDate);
-
-                if (data.Url) {
-                    const messageLink = document.createElement("a");
-                    messageLink.href = data.Url;
-                    messageLink.textContent = "Ver detalhes";
-                    messageLink.target = "_blank";
-                    messageElement.appendChild(messageLink);
-                }
-
-                const deleteButton = document.createElement("button");
-                deleteButton.className = "delete-button";
-
-                if (data.Status !== "Finalized") {
-                    const loadingSpinner = document.createElement("div");
-                    loadingSpinner.className = "loading-spinner";
-                    deleteButton.appendChild(loadingSpinner);
-                }
-                else {
-                    const deleteButtonText = document.createTextNode("X");
-                    deleteButton.appendChild(deleteButtonText);
-                    deleteButton.onclick = async function () {
-                        const messageId = messageElement.dataset.messageId;
-                        await fetch(`https://localhost:7035/notification/delete/${channel}/${messageId}`, {
-                            method: 'DELETE'
-                        });
-                        messages.removeChild(messageElement);
-                    };
-                }
-
-                messageElement.appendChild(deleteButton);
-
-                messages.appendChild(messageElement);
+                addNotification(data);
             }
         };
 
@@ -265,6 +161,99 @@
                 }
             }
         });
+
+        function deleteNotification(messageId) {
+            const messages = document.getElementById("messages");
+            const messageElement = document.querySelector(`li[data-message-id="${messageId}"]`);
+            if (messageElement) {
+                messages.removeChild(messageElement);
+            }
+        }
+
+        function updateNotification(data) {
+            let messageElement = document.querySelector(`li[data-message-id="${data.Id}"]`);
+            if (messageElement) {
+                messageElement.className = "message finalized";
+                messageElement.querySelector("p").textContent = data.Message || "No message content";
+                messageElement.querySelector(".date").textContent = new Date(data.Date).toLocaleString() || "No date provided";
+                if (data.Url) {
+                    let messageLink = messageElement.querySelector("a");
+                    if (!messageLink) {
+                        messageLink = document.createElement("a");
+                        messageElement.appendChild(messageLink);
+                    }
+                    messageLink.href = data.Url;
+                    messageLink.textContent = "Ver detalhes";
+                    messageLink.target = "_blank";
+                }
+                // Remova o loading spinner se presente
+                const loadingSpinner = messageElement.querySelector(".loading-spinner");
+                if (loadingSpinner) {
+                    loadingSpinner.remove();
+                }
+
+                // Adicione o botão de delete se o status for Finalized
+                const deleteButton = createDeleteButton(data.Status, data.Id);
+                messageElement.appendChild(deleteButton);
+            }
+        }
+
+        function addNotification(data) {
+            const messages = document.getElementById("messages");
+            const messageElement = document.createElement("li");
+            messageElement.className = "message";
+            messageElement.dataset.messageId = data.Id;
+
+            // Adicione a classe com base no status
+            if (data.Status === "Processing") {
+                messageElement.classList.add("processing");
+            } else if (data.Status === "Finalized") {
+                messageElement.classList.add("finalized");
+            }
+
+            const messageContent = document.createElement("p");
+            messageContent.textContent = data.Message || "No message content";
+            messageElement.appendChild(messageContent);
+
+            const messageDate = document.createElement("p");
+            messageDate.className = "date";
+            messageDate.textContent = new Date(data.Date).toLocaleString() || "No date provided";
+            messageElement.appendChild(messageDate);
+
+            if (data.Url) {
+                const messageLink = document.createElement("a");
+                messageLink.href = data.Url;
+                messageLink.textContent = "Ver detalhes";
+                messageLink.target = "_blank";
+                messageElement.appendChild(messageLink);
+            }
+
+            const deleteButton = createDeleteButton(data.Status, data.Id);
+            messageElement.appendChild(deleteButton);
+
+            messages.appendChild(messageElement);
+        }
+
+        function createDeleteButton(status, messageId) {
+            const deleteButton = document.createElement("button");
+            deleteButton.className = "delete-button";
+
+            if (status !== "Finalized") {
+                const loadingSpinner = document.createElement("div");
+                loadingSpinner.className = "loading-spinner";
+                deleteButton.appendChild(loadingSpinner);
+            } else {
+                const deleteButtonText = document.createTextNode("X");
+                deleteButton.appendChild(deleteButtonText);
+                deleteButton.onclick = async function () {
+                    await fetch(`https://localhost:7035/notification/delete/${channel}/${messageId}`, {
+                        method: 'DELETE'
+                    });
+                    deleteNotification(messageId);
+                };
+            }
+            return deleteButton;
+        }
     </script>
 </body>
 </html>

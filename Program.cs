@@ -8,7 +8,7 @@ builder.Services.CustomAddCors();
 builder.Services.Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true);
 builder.Services.AddSingleton<WebSocketHandler>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect("localhost:6379")); // Adicione o Redis
-builder.Services.AddSingleton<INotificationsMongoRepository, NotificationsMongoRepository>(); // Adicione o MongoDB repository
+builder.Services.AddSingleton<INotificationsRepository, NotificationsRepository>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

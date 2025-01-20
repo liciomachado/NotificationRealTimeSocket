@@ -2,7 +2,7 @@
 
 namespace NotificationRealTimeSocket.Repositories;
 
-public class NotificationsMongoRepository : INotificationsMongoRepository
+public class NotificationsRepository : INotificationsRepository
 {
     private static readonly List<User> Users = [];
 

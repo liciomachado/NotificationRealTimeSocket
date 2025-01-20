@@ -7,7 +7,7 @@ using System.Text.Json;
 
 namespace NotificationRealTimeSocket;
 
-public class WebSocketHandler(IConnectionMultiplexer redis, INotificationsMongoRepository notificationsRepository)
+public class WebSocketHandler(IConnectionMultiplexer redis, INotificationsRepository notificationsRepository)
 {
     public async Task HandleWebSocketRequest(HttpContext context, string userId)
     {
@@ -55,6 +55,6 @@ public class WebSocketHandler(IConnectionMultiplexer redis, INotificationsMongoR
     }
 }
 
-public record ChangeNotificationDtoWebsocket(string Action, string Id, string Message, DateTime Date, string? Url, string Status);
+public record ChangeNotificationEvent(string Action, string Id, string Message, DateTime Date, string? Url, string Status);
 
 public record NotificationDtoWebsocket(string Id, string Message, DateTime Date, string? Url, string Status);

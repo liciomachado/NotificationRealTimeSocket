@@ -2,7 +2,7 @@
 
 namespace NotificationRealTimeSocket.Repositories;
 
-public interface INotificationsMongoRepository
+public interface INotificationsRepository
 {
     Task<Notification> AddMessage(string userId, string message, string? url = default);
 

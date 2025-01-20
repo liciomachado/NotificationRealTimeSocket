@@ -7,14 +7,14 @@ namespace NotificationRealTimeSocket.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class NotificationController(IConnectionMultiplexer redis, INotificationsMongoRepository notificationsMongoRepository) : ControllerBase
+public class NotificationController(IConnectionMultiplexer redis, INotificationsRepository notificationsRepository) : ControllerBase
 {
 
     [HttpPost("publish/{userId}")]
     public async Task<IActionResult> Publish(string userId, [FromBody] NotificationDtoRequest request)
     {
         var subscriber = redis.GetSubscriber();
-        var newNotification = await notificationsMongoRepository.AddMessage(userId, request.Message, request.Url);
+        var newNotification = await notificationsRepository.AddMessage(userId, request.Message, request.Url);
         var message = JsonSerializer.Serialize(newNotification);
         await subscriber.PublishAsync(userId, message);
         return Ok(newNotification);
@@ -23,9 +23,9 @@ public class NotificationController(IConnectionMultiplexer redis, INotifications
     [HttpDelete("delete/{userId}/{messageId}")]
     public async Task<IActionResult> Delete(string userId, string messageId)
     {
-        await notificationsMongoRepository.DeleteMessage(userId, messageId);
+        await notificationsRepository.DeleteMessage(userId, messageId);
         var subscriber = redis.GetSubscriber();
-        var deleteNotification = JsonSerializer.Serialize(new { Action = "delete", MessageId = messageId });
+        var deleteNotification = JsonSerializer.Serialize(new DeleteEvent("delete", messageId));
         await subscriber.PublishAsync(userId, deleteNotification);
         return NoContent();
     }
@@ -33,14 +33,14 @@ public class NotificationController(IConnectionMultiplexer redis, INotifications
     [HttpPut("finalize/{userId}/{messageId}")]
     public async Task<IActionResult> Finalize(string userId, string messageId)
     {
-        var notification = await notificationsMongoRepository.GetAsync(userId, messageId);
+        var notification = await notificationsRepository.GetAsync(userId, messageId);
         if (notification is null) return NotFound();
 
         notification.Status = "Finalized";
-        await notificationsMongoRepository.Update(userId, notification);
+        await notificationsRepository.Update(userId, notification);
 
         var subscriber = redis.GetSubscriber();
-        var deleteNotification = JsonSerializer.Serialize(new ChangeNotificationDtoWebsocket("update", notification.Id, notification.Message, notification.DateCreated, notification.Url, notification.Status));
+        var deleteNotification = JsonSerializer.Serialize(new ChangeNotificationEvent("update", notification.Id, notification.Message, notification.DateCreated, notification.Url, notification.Status));
         await subscriber.PublishAsync(userId, deleteNotification);
         return NoContent();
     }

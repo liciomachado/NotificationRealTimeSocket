@@ -7,29 +7,29 @@ using System.Text.Json.Nodes;
 
 namespace NotificationRealTimeSocket.Controllers;
 
-[Route("[controller]")]
 [ApiController]
+[Route("[controller]")]
 public class ServerSentEventController(
     IConnectionMultiplexer redis,
-    INotificationsMongoRepository notificationsRepository)
+    INotificationsRepository notificationsRepository)
     : ControllerBase
 {
-    private static readonly List<(StreamWriter strem, string channel)> _clients = new();
+    private static readonly List<(StreamWriter stream, string channel)> Clients = [];
 
-    [HttpGet("stream/{userId}")]
-    public async Task GetNotificationsStream(string userId, CancellationToken cancellationToken)
+    [HttpGet("stream/{channel}")]
+    public async Task GetNotificationsStream(string channel, CancellationToken cancellationToken)
     {
         Response.Headers.Append("Content-Type", "text/event-stream");
         var subscriber = redis.GetSubscriber();
         var writer = new StreamWriter(Response.Body);
 
-        lock (_clients)
+        lock (Clients)
         {
-            _clients.Add((writer, userId));
+            Clients.Add((writer, channel));
         }
 
         // Envie notificações salvas ao novo consumidor
-        var notifications = await notificationsRepository.GetNotificationsByUser(userId);
+        var notifications = await notificationsRepository.GetNotificationsByUser(channel);
 
         foreach (var notification in notifications)
         {
@@ -40,53 +40,7 @@ public class ServerSentEventController(
             await writer.FlushAsync(cancellationToken);
         }
 
-        // Inscreva-se no canal Redis
-        await subscriber.SubscribeAsync(userId, async (channel, message) =>
-        {
-            var notificationReceived = JsonSerializer.Deserialize<Notification>(message!)!;
-            var jsonObject = JsonNode.Parse(message)?.AsObject()!;
-            var action = jsonObject["Action"]?.ToString();
-
-            string json;
-            if (!string.IsNullOrEmpty(action) && action == "delete")
-                json = message!;
-            else if (!string.IsNullOrEmpty(action) && action == "update")
-            {
-                json = message!;
-            }
-            else
-            {
-                var messageSend = new NotificationDtoWebsocket(notificationReceived.Id,
-                    notificationReceived.Message, notificationReceived.DateCreated, notificationReceived.Url, notificationReceived.Status);
-                json = JsonSerializer.Serialize(messageSend);
-            }
-
-            lock (_clients)
-            {
-                var disconnectedClients = new List<(StreamWriter stream, string channel)>();
-                foreach (var client in _clients.Where(x => x.channel == userId))
-                {
-                    try
-                    {
-                        if (!HttpContext.RequestAborted.IsCancellationRequested)
-                        {
-                            client.strem.Write($"data: {json}\n\n");
-                            client.strem.Flush();
-                        }
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        disconnectedClients.Add(client);
-                    }
-                }
-
-                foreach (var disconnectedClient in disconnectedClients)
-                {
-                    _clients.Remove(disconnectedClient);
-                    Console.WriteLine($"Conexao fechada no {userId}");
-                }
-            }
-        });
+        await subscriber.SubscribeAsync(channel, Handler);
 
         // Mantenha a conexão aberta
         try
@@ -102,14 +56,62 @@ public class ServerSentEventController(
         }
         finally
         {
-            lock (_clients)
+            lock (Clients)
             {
-                _clients.Remove((writer, userId));
-                Console.WriteLine($"Conexao fechada no {userId}");
+                Clients.Remove((writer, channel));
+                Console.WriteLine($"Conexao fechada no {channel}");
             }
-            await subscriber.UnsubscribeAsync(userId);
+            await subscriber.UnsubscribeAsync(channel);
             writer.Close();
             await writer.DisposeAsync();
+        }
+    }
+
+    // Inscreva-se no canal Redis
+    private void Handler(RedisChannel channel, RedisValue message)
+    {
+        var notificationReceived = JsonSerializer.Deserialize<Notification>(message!)!;
+        var jsonObject = JsonNode.Parse(message)?.AsObject()!;
+        var action = jsonObject["Action"]?.ToString();
+
+        string json;
+        if (!string.IsNullOrEmpty(action) && action == "delete" || action == "update")
+            json = message!;
+        else
+        {
+            var messageSend = new NotificationDtoWebsocket(notificationReceived.Id, notificationReceived.Message, notificationReceived.DateCreated, notificationReceived.Url, notificationReceived.Status);
+            json = JsonSerializer.Serialize(messageSend);
+        }
+
+        SendToActiveClients(json, channel.ToString());
+    }
+
+    private void SendToActiveClients(string data, string channel)
+    {
+        lock (Clients)
+        {
+            var disconnectedClients = new List<(StreamWriter stream, string channel)>();
+            foreach (var client in Clients.Where(x => x.channel == channel))
+            {
+                try
+                {
+                    if (!HttpContext.RequestAborted.IsCancellationRequested)
+                    {
+                        client.stream.WriteAsync($"data: {data}\n\n");
+                        client.stream.FlushAsync();
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    disconnectedClients.Add(client);
+                }
+            }
+
+            foreach (var disconnectedClient in disconnectedClients)
+            {
+                Clients.Remove(disconnectedClient);
+                Console.WriteLine($"Conexao fechada no {channel}");
+            }
         }
     }
 }
