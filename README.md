@@ -22,9 +22,9 @@ Este é um projeto .NET que utiliza Docker para facilitar o ambiente de desenvol
   docker-compose up -d
 ```
 
-Acesse o back-end em: http://localhost:7035
-Acesse o front SSE em: sse.html
-Acesse o front WebSocket em: websocket.html
+- Acesse o back-end em: http://localhost:7035
+- Acesse o front SSE em: sse.html?channel=channel1 -> para o canal ser channel1, é possivel mudar para outros 
+- Acesse o front WebSocket em: websocket.html?channel=channel1 -> para o canal ser channel1, é possivel mudar para outros 
 
 3. Parando a execução do projeto e removendo os containers
 
