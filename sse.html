@@ -125,7 +125,8 @@
         }
 
         // Conecte-se ao SSE usando o canal especificado
-        const eventSource = new EventSource(`https://localhost:7035/ServerSentEvent/stream/${channel}`);
+        const eventSource = new EventSource(`https://localhost:7035/api/SseV3/stream/${channel}`);
+
 
         eventSource.onmessage = function (event) {
             const data = JSON.parse(event.data);
