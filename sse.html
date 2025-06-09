@@ -125,21 +125,23 @@
         }
 
         // Conecte-se ao SSE usando o canal especificado
+        //const eventSource = new EventSource(`http://localhost:9999/api/SseV3/stream/${channel}`); //NGINX
         const eventSource = new EventSource(`https://localhost:7035/api/SseV3/stream/${channel}`);
 
-
-        eventSource.onmessage = function (event) {
+        eventSource.addEventListener("new-notification", event => {
             const data = JSON.parse(event.data);
-            console.log(data);
+            addNotification(data);
+        });
 
-            if (data.Action === "delete") {
-                deleteNotification(data.MessageId);
-            } else if (data.Action === "update") {
-                updateNotification(data);
-            } else {
-                addNotification(data);
-            }
-        };
+        eventSource.addEventListener("update-notification", event => {
+            const data = JSON.parse(event.data);
+            updateNotification(data);
+        });
+
+        eventSource.addEventListener("delete-notification", event => {
+            const data = JSON.parse(event.data);
+            deleteNotification(data.MessageId);
+        });
 
         eventSource.onerror = function (error) {
             console.error("SSE error:", error);

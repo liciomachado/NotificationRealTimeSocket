@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using NotificationRealTimeSocket;
 using NotificationRealTimeSocket.Repositories;
-using NotificationRealTimeSocket.SseV3;
+using NotificationRealTimeSocket.Services;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,12 +11,14 @@ var builder = WebApplication.CreateBuilder(args);
 //builder.WebHost.UseUrls($"http://localhost:{port}");
 
 builder.Services.CustomAddCors();
+
 builder.Services.Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true);
 builder.Services.AddSingleton<WebSocketHandler>();
+//builder.Services.AddSingleton<IPubSubService, PubSubService>();
+
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect("localhost:6379")); // Adicione o Redis
 builder.Services.AddSingleton<INotificationsRepository, NotificationsRepository>();
-
-builder.Services.AddSingleton<NotificationStreamManager>();
+builder.Services.AddSingleton<INotificationStreamManager, NotificationStreamManager>();
 builder.Services.AddHostedService<RedisNotificationService>();
 
 builder.Services.AddControllers();

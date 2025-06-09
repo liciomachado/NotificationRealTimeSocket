@@ -1,9 +1,24 @@
 ﻿using System.Collections.Concurrent;
+using System.Text.Json;
 using System.Threading.Channels;
 
-namespace NotificationRealTimeSocket.SseV3;
+namespace NotificationRealTimeSocket.Services;
 
-public class NotificationStreamManager
+public interface INotificationStreamManager
+{
+    ChannelReader<string> Subscribe(string channel);
+    void Unsubscribe(string channel, ChannelReader<string> reader);
+    Task BroadcastAsync(string channel, string message);
+    Task PublishAsync<T>(string channel, T request, string eventName);
+}
+
+public class PublisherDto<T>(string eventName, T data)
+{
+    public string EventName { get; init; } = eventName;
+    public T Data { get; init; } = data;
+}
+
+public class NotificationStreamManager : INotificationStreamManager
 {
     private readonly ConcurrentDictionary<string, List<Channel<string>>> _channels = new();
 
@@ -16,16 +31,6 @@ public class NotificationStreamManager
             (_, list) => { list.Add(channelStream); return list; });
 
         return channelStream.Reader;
-    }
-
-    public void Unsubscribe(string channel, Channel<string> ch)
-    {
-        if (_channels.TryGetValue(channel, out var list))
-        {
-            list.Remove(ch);
-            if (list.Count == 0)
-                _channels.TryRemove(channel, out _);
-        }
     }
 
     public void Unsubscribe(string channel, ChannelReader<string> reader)
@@ -43,6 +48,7 @@ public class NotificationStreamManager
 
     public async Task BroadcastAsync(string channel, string message)
     {
+        Console.WriteLine($"Received message: {message} on channel: {channel}");
         if (_channels.TryGetValue(channel, out var list))
         {
             foreach (var ch in list)
@@ -50,5 +56,11 @@ public class NotificationStreamManager
                 await ch.Writer.WriteAsync(message);
             }
         }
+    }
+
+    public async Task PublishAsync<T>(string channel, T request, string eventName)
+    {
+        var json = JsonSerializer.Serialize(new PublisherDto<T>(eventName, request));
+        await BroadcastAsync(channel, json);
     }
 }

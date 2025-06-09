@@ -30,7 +30,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Utilitário para ler parâmetros da URL
+        // Utilitï¿½rio para ler parï¿½metros da URL
         function getQueryParams() {
             const params = new URLSearchParams(window.location.search);
             return {
@@ -45,18 +45,18 @@
 
         // Adiciona camada base
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
+            attribution: 'ï¿½ OpenStreetMap'
         }).addTo(map);
 
         if (!tipo || !idEntrega) {
-            infoDiv.innerText = "Erro: Parâmetros 'tipo' e 'idEntrega' são obrigatórios na URL.";
-            throw new Error("Parâmetros obrigatórios ausentes.");
+            infoDiv.innerText = "Erro: Parametros 'tipo' e 'idEntrega' sÃ£o obrigatÃ³rios na URL.";
+            throw new Error("Parametros obrigatÃ³rios ausentes.");
         }
 
         infoDiv.innerText = `Modo: ${tipo.toUpperCase()} | Entrega ID: ${idEntrega}`;
 
         if (tipo === "entregador") {
-            // Clica no mapa para enviar localização
+            // Clica no mapa para enviar localizaï¿½ï¿½o
             map.on("click", async (e) => {
                 const { lat, lng } = e.latlng;
 
@@ -78,18 +78,18 @@
                     });
 
                     if (response.ok) {
-                        console.log("Localização enviada com sucesso.");
+                        console.log("LocalizaÃ§Ã£o enviada com sucesso.");
                     } else {
                         console.error("Erro ao enviar:", await response.text());
                     }
                 } catch (err) {
-                    console.error("Erro na requisição:", err);
+                    console.error("Erro na requisiÃ§Ã£o:", err);
                 }
             });
         }
 
         if (tipo === "cliente") {
-            // Marcador para mostrar posição atual do entregador
+            // Marcador para mostrar posiï¿½ï¿½o atual do entregador
             let marker = null;
             let trackPoints = [];
             let polyline = null;
@@ -101,7 +101,7 @@
                 const data = JSON.parse(event.data);
                 const { Latitude, Longitude } = data;
 
-                infoDiv.innerText = `Última posição: ${Latitude.toFixed(6)}, ${Longitude.toFixed(6)}`;
+                infoDiv.innerText = `ultima posiÃ§Ã£o: ${Latitude.toFixed(6)}, ${Longitude.toFixed(6)}`;
 
                 const latlng = [Latitude, Longitude];
                 trackPoints.push(latlng);
@@ -124,7 +124,7 @@
 
             eventSource.onerror = function (err) {
                 console.error("Erro no SSE:", err);
-                infoDiv.innerText = "Erro ao receber atualizações de localização.";
+                infoDiv.innerText = "Erro ao receber atualizaÃ§Ãµes de localizaÃ§Ã£o.";
             };
         }
     </script>

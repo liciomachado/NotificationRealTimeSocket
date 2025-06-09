@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using NotificationRealTimeSocket.Services;
 using StackExchange.Redis;
 using System.Text.Json;
 
@@ -6,7 +7,7 @@ namespace NotificationRealTimeSocket.SseV3;
 
 [Route("api/[controller]")]
 [ApiController]
-public class RastreamentoEntregaController(NotificationStreamManager streamManager, IConnectionMultiplexer redis) : ControllerBase
+public class RastreamentoEntregaController(INotificationStreamManager streamManager, IConnectionMultiplexer redis) : ControllerBase
 {
     [HttpGet("{channel}")]
     public async Task GetStream(string channel, CancellationToken cancellationToken)

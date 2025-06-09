@@ -55,6 +55,5 @@ public class WebSocketHandler(IConnectionMultiplexer redis, INotificationsReposi
     }
 }
 
-public record ChangeNotificationEvent(string Action, string Id, string Message, DateTime Date, string? Url, string Status);
 
 public record NotificationDtoWebsocket(string Id, string Message, DateTime Date, string? Url, string Status);

@@ -1,22 +1,21 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using NotificationRealTimeSocket.Repositories;
-using StackExchange.Redis;
-using System.Text.Json;
+using NotificationRealTimeSocket.Services;
 
 namespace NotificationRealTimeSocket.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class NotificationController(IConnectionMultiplexer redis, INotificationsRepository notificationsRepository) : ControllerBase
+public class NotificationController(INotificationStreamManager pubSubService, INotificationsRepository notificationsRepository) : ControllerBase
 {
 
-    [HttpPost("publish/{userId}")]
-    public async Task<IActionResult> Publish(string userId, [FromBody] NotificationDtoRequest request)
+    [HttpPost("publish/{channel}")]
+    public async Task<IActionResult> Publish(string channel, [FromBody] NotificationDtoRequest request)
     {
-        var subscriber = redis.GetSubscriber();
-        var newNotification = await notificationsRepository.AddMessage(userId, request.Message, request.Url);
-        var message = JsonSerializer.Serialize(newNotification);
-        await subscriber.PublishAsync(userId, message);
+        Response.Headers.Append("MachineName", Environment.MachineName);
+
+        var newNotification = await notificationsRepository.AddMessage(channel, request.Message, request.Url);
+        await pubSubService.PublishAsync(channel, newNotification, "new-notification");
         return Ok(newNotification);
     }
 
@@ -24,9 +23,9 @@ public class NotificationController(IConnectionMultiplexer redis, INotifications
     public async Task<IActionResult> Delete(string userId, string messageId)
     {
         await notificationsRepository.DeleteMessage(userId, messageId);
-        var subscriber = redis.GetSubscriber();
-        var deleteNotification = JsonSerializer.Serialize(new DeleteEvent("delete", messageId));
-        await subscriber.PublishAsync(userId, deleteNotification);
+
+        var deleteNotification = new DeleteEvent("delete", messageId);
+        await pubSubService.PublishAsync(userId, deleteNotification, "delete-notification");
         return NoContent();
     }
 
@@ -39,11 +38,14 @@ public class NotificationController(IConnectionMultiplexer redis, INotifications
         notification.Status = "Finalized";
         await notificationsRepository.Update(userId, notification);
 
-        var subscriber = redis.GetSubscriber();
-        var deleteNotification = JsonSerializer.Serialize(new ChangeNotificationEvent("update", notification.Id, notification.Message, notification.DateCreated, notification.Url, notification.Status));
-        await subscriber.PublishAsync(userId, deleteNotification);
+        var finalizedNotification = new ChangeNotificationEvent("update", notification.Id, notification.Message,
+            notification.DateCreated, notification.Url, notification.Status);
+
+        await pubSubService.PublishAsync(userId, finalizedNotification, "update-notification");
         return NoContent();
     }
 }
 
 public record NotificationDtoRequest(string Message, string? Url);
+public record DeleteEvent(string Action, string MessageId);
+public record ChangeNotificationEvent(string Action, string Id, string Message, DateTime Date, string? Url, string Status);
