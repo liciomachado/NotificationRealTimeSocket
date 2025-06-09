@@ -1,0 +1,558 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard SSE - Tempo Real</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+            .header h1 {
+                font-size: 2.5rem;
+                margin-bottom: 10px;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .status-item {
+            text-align: center;
+            color: white;
+        }
+
+        .status-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4757;
+            animation: pulse 2s infinite;
+        }
+
+            .status-dot.connected {
+                background: #2ed573;
+            }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 30px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+            .btn-primary:hover {
+                background: #5a6fd8;
+                transform: translateY(-2px);
+            }
+
+        .btn-secondary {
+            background: #f1f2f6;
+            color: #2c3e50;
+        }
+
+            .btn-secondary:hover {
+                background: #ddd;
+                transform: translateY(-2px);
+            }
+
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+        }
+
+        .data-table {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .table-header {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .table-wrapper {
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 10px;
+            border: 1px solid #e1e8ed;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #2c3e50;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .status-bar {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .chart-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+
+            .chart-controls {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>Dashboard em Tempo Real</h1>
+            <p>Monitoramento de dados via Server-Sent Events</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-label">Valor Atual</div>
+                <div class="status-value" id="currentValue">--</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Última Atualização</div>
+                <div class="status-value" id="lastUpdate">--</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Total de Pontos</div>
+                <div class="status-value" id="totalPoints">0</div>
+            </div>
+            <div class="status-item">
+                <div class="connection-status">
+                    <div class="status-dot" id="connectionDot"></div>
+                    <div>
+                        <div class="status-label">Conexão</div>
+                        <div class="status-value" id="connectionStatus">Desconectado</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">Gráfico de Valores em Tempo Real</div>
+                <div class="chart-controls">
+                    <button class="btn btn-secondary" onclick="clearChart()">Limpar</button>
+                    <button class="btn btn-primary" onclick="toggleConnection()" id="toggleBtn">Conectar</button>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="realtimeChart"></canvas>
+            </div>
+        </div>
+
+        <div class="data-table">
+            <div class="table-header">Histórico de Dados</div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Horário</th>
+                            <th>Valor</th>
+                            <th>Variação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                        <tr>
+                            <td colspan="3" class="loading">
+                                <div class="spinner"></div>
+                                Aguardando dados...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do gráfico
+        const ctx = document.getElementById('realtimeChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Valor',
+                    data: [],
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Horário'
+                        },
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Valor'
+                        },
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    }
+                },
+                animation: {
+                    duration: 750,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        });
+
+        // Variáveis de controle
+        let eventSource = null;
+        let isConnected = false;
+        let dataHistory = [];
+        const maxDataPoints = 50; // Máximo de pontos no gráfico
+
+        // Elementos do DOM
+        const currentValueEl = document.getElementById('currentValue');
+        const lastUpdateEl = document.getElementById('lastUpdate');
+        const totalPointsEl = document.getElementById('totalPoints');
+        const connectionStatusEl = document.getElementById('connectionStatus');
+        const connectionDotEl = document.getElementById('connectionDot');
+        const toggleBtnEl = document.getElementById('toggleBtn');
+        const dataTableBodyEl = document.getElementById('dataTableBody');
+
+        // Função para conectar ao SSE
+        function connectSSE() {
+            // ALTERE ESTA URL PARA O SEU ENDPOINT SSE
+            const sseUrl = 'https://localhost:7035/api/SseV3/stream/dashboard'; // Substitua pela sua URL
+
+            try {
+                eventSource = new EventSource(sseUrl);
+
+                eventSource.onopen = function () {
+                    updateConnectionStatus(true);
+                    console.log('Conexão SSE estabelecida');
+                };
+
+                eventSource.addEventListener("new-item-dashboard", event => {
+                    const data = JSON.parse(event.data);
+                    console.log(data);
+                    processNewData(data);
+                });
+
+                eventSource.onerror = function (error) {
+                    console.error('Erro na conexão SSE:', error);
+                    updateConnectionStatus(false);
+
+                    // Tentar reconectar após 5 segundos
+                    setTimeout(() => {
+                        if (!isConnected) {
+                            connectSSE();
+                        }
+                    }, 5000);
+                };
+
+            } catch (error) {
+                console.error('Erro ao conectar:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        // Função para desconectar do SSE
+        function disconnectSSE() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            updateConnectionStatus(false);
+        }
+
+        // Função para processar novos dados
+        function processNewData(data) {
+            const timestamp = new Date(data.Date);
+            const value = parseFloat(data.Value);
+
+            // Atualizar valores na interface
+            currentValueEl.textContent = value.toFixed(2);
+            lastUpdateEl.textContent = timestamp.toLocaleTimeString();
+
+            // Adicionar ao histórico
+            dataHistory.push({ timestamp, value });
+            totalPointsEl.textContent = dataHistory.length;
+
+            // Atualizar gráfico
+            updateChart(timestamp, value);
+
+            // Atualizar tabela
+            updateTable();
+        }
+
+        // Função para atualizar o gráfico
+        function updateChart(timestamp, value) {
+            const timeLabel = timestamp.toLocaleTimeString();
+
+            chart.data.labels.push(timeLabel);
+            chart.data.datasets[0].data.push(value);
+
+            // Manter apenas os últimos pontos
+            if (chart.data.labels.length > maxDataPoints) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+
+            chart.update('none'); // Atualização sem animação para melhor performance
+        }
+
+        // Função para atualizar a tabela
+        function updateTable() {
+            const tbody = dataTableBodyEl;
+            tbody.innerHTML = '';
+
+            // Mostrar os últimos 10 registros
+            const recentData = dataHistory.slice(-10).reverse();
+
+            recentData.forEach((item, index) => {
+                const row = document.createElement('tr');
+                const previousValue = index < recentData.length - 1 ? recentData[index + 1].value : item.value;
+                const variation = item.value - previousValue;
+                const variationPercent = previousValue !== 0 ? ((variation / previousValue) * 100) : 0;
+
+                const variationClass = variation > 0 ? 'positive' : variation < 0 ? 'negative' : 'neutral';
+                const variationSymbol = variation > 0 ? '+' : '';
+
+                row.innerHTML = `
+                        <td>${item.timestamp.toLocaleString()}</td>
+                        <td>${item.value.toFixed(2)}</td>
+                        <td style="color: ${variation > 0 ? '#2ed573' : variation < 0 ? '#ff4757' : '#666'}">
+                            ${variationSymbol}${variation.toFixed(2)} (${variationSymbol}${variationPercent.toFixed(1)}%)
+                        </td>
+                    `;
+                tbody.appendChild(row);
+            });
+
+            if (recentData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #666;">Nenhum dado disponível</td></tr>';
+            }
+        }
+
+        // Função para atualizar status da conexão
+        function updateConnectionStatus(connected) {
+            isConnected = connected;
+
+            if (connected) {
+                connectionStatusEl.textContent = 'Conectado';
+                connectionDotEl.classList.add('connected');
+                toggleBtnEl.textContent = 'Desconectar';
+                toggleBtnEl.className = 'btn btn-secondary';
+            } else {
+                connectionStatusEl.textContent = 'Desconectado';
+                connectionDotEl.classList.remove('connected');
+                toggleBtnEl.textContent = 'Conectar';
+                toggleBtnEl.className = 'btn btn-primary';
+            }
+        }
+
+        // Função para alternar conexão
+        function toggleConnection() {
+            if (isConnected) {
+                disconnectSSE();
+            } else {
+                connectSSE();
+            }
+        }
+
+        // Função para limpar o gráfico
+        function clearChart() {
+            chart.data.labels = [];
+            chart.data.datasets[0].data = [];
+            chart.update();
+
+            dataHistory = [];
+            totalPointsEl.textContent = '0';
+            currentValueEl.textContent = '--';
+            lastUpdateEl.textContent = '--';
+
+            updateTable();
+        }
+
+        // Inicializar a interface
+        updateConnectionStatus(false);
+        updateTable();
+    </script>
+</body>
+</html>

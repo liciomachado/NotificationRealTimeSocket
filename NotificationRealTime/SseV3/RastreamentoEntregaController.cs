@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using NotificationRealTimeSocket.Services;
+using NotificationRealTime.Services;
 using StackExchange.Redis;
 using System.Text.Json;
 
-namespace NotificationRealTimeSocket.SseV3;
+namespace NotificationRealTime.SseV3;
 
 [Route("api/[controller]")]
 [ApiController]

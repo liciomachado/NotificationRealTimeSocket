@@ -1,7 +1,7 @@
 ﻿using StackExchange.Redis;
 using System.Text.Json;
 
-namespace NotificationRealTimeSocket.Services;
+namespace NotificationRealTime.Services;
 
 
 public interface IPubSubService

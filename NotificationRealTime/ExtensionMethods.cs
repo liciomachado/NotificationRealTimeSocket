@@ -1,4 +1,4 @@
-﻿namespace NotificationRealTimeSocket;
+﻿namespace NotificationRealTime;
 
 public static class ExtensionMethods
 {

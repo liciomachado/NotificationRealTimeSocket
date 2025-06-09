@@ -1,11 +1,11 @@
-﻿using NotificationRealTimeSocket.Domain;
-using NotificationRealTimeSocket.Repositories;
+﻿using NotificationRealTime.Domain;
+using NotificationRealTime.Repositories;
 using StackExchange.Redis;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 
-namespace NotificationRealTimeSocket;
+namespace NotificationRealTime;
 
 public class WebSocketHandler(IConnectionMultiplexer redis, INotificationsRepository notificationsRepository)
 {

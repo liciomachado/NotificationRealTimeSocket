@@ -1,22 +1,30 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using NotificationRealTimeSocket.Repositories;
-using NotificationRealTimeSocket.Services;
+using NotificationRealTime.Repositories;
+using NotificationRealTime.Services;
 
-namespace NotificationRealTimeSocket.Controllers;
+namespace NotificationRealTime.Controllers;
 
 [ApiController]
 [Route("[controller]")]
 public class NotificationController(INotificationStreamManager pubSubService, INotificationsRepository notificationsRepository) : ControllerBase
 {
-
     [HttpPost("publish/{channel}")]
     public async Task<IActionResult> Publish(string channel, [FromBody] NotificationDtoRequest request)
     {
-        Response.Headers.Append("MachineName", Environment.MachineName);
-
         var newNotification = await notificationsRepository.AddMessage(channel, request.Message, request.Url);
         await pubSubService.PublishAsync(channel, newNotification, "new-notification");
         return Ok(newNotification);
+    }
+
+    [HttpPost("dashboard/{channel}")]
+    public async Task<IActionResult> Dashboard(string channel)
+    {
+        // Gera um valor double aleatório entre 1 (inclusive) e 1000 (exclusivo)
+        var random = new Random();
+        var valorAleatorio = random.NextDouble() * (1000 - 1) + 1;
+        var evento = new EventDto(DateTime.Now, valorAleatorio);
+        await pubSubService.PublishAsync(channel, evento, "new-item-dashboard");
+        return Ok(evento);
     }
 
     [HttpDelete("delete/{userId}/{messageId}")]
@@ -46,6 +54,7 @@ public class NotificationController(INotificationStreamManager pubSubService, IN
     }
 }
 
+public record EventDto(DateTime Date, double Value);
 public record NotificationDtoRequest(string Message, string? Url);
 public record DeleteEvent(string Action, string MessageId);
 public record ChangeNotificationEvent(string Action, string Id, string Message, DateTime Date, string? Url, string Status);

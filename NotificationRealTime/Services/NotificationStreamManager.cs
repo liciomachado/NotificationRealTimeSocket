@@ -2,7 +2,7 @@
 using System.Text.Json;
 using System.Threading.Channels;
 
-namespace NotificationRealTimeSocket.Services;
+namespace NotificationRealTime.Services;
 
 public interface INotificationStreamManager
 {

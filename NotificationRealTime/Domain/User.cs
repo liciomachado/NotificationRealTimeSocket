@@ -1,4 +1,4 @@
-﻿namespace NotificationRealTimeSocket.Domain;
+﻿namespace NotificationRealTime.Domain;
 
 public class User(string id)
 {

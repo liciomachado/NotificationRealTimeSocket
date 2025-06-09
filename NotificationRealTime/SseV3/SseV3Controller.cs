@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using NotificationRealTimeSocket.Services;
+using NotificationRealTime.Services;
 
-namespace NotificationRealTimeSocket.SseV3;
+namespace NotificationRealTime.SseV3;
 
 [Route("api/[controller]")]
 [ApiController]

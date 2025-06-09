@@ -1,6 +1,6 @@
-﻿using NotificationRealTimeSocket.Domain;
+﻿using NotificationRealTime.Domain;
 
-namespace NotificationRealTimeSocket.Repositories;
+namespace NotificationRealTime.Repositories;
 
 public interface INotificationsRepository
 {
